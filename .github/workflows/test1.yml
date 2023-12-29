@@ -1,0 +1,48 @@
+name: peekup development workflow
+
+on:
+  push:
+    branches:
+      - dev-branch
+
+jobs:
+  peekup-development:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2.1.5
+        with:
+          node-version: 18.18.2
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: '${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}'
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm i
+
+      - name: create build and store old build to old_build
+        run: |
+          if npm run custom-build; then
+            mv ./temporary_build new_build
+            rm -r old_build
+            mv build old_build
+          else
+            echo "Custom build failed."
+            exit 1
+          fi
+
+      - name: Product Manager
+        run: npm run start
+        env:
+          REACT_APP_SOCKET_URL: '${{ secrets.REACT_APP_SOCKET_URL }}'
+          REACT_APP_MAP_CENTER_LAT: '${{ secrets.REACT_APP_MAP_CENTER_LAT }}'
+          REACT_APP_MAP_CENTER_LNG: '${{ secrets.REACT_APP_MAP_CENTER_LNG }}'
